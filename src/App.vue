@@ -2,7 +2,7 @@
   <div id="app">
     <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
     <ThreeScene />
-    <UVCanvas v-on:uv-update="moveUVCursor(coords)"/>
+    <UVCanvas/>
   </div>
 </template>
 

@@ -22,6 +22,8 @@ export default {
       mainObjects: [],
       marker: null,
       shiftDown: false,
+      currentCoord: null,
+      mouseDown: false,
     };
   },
   mounted() {
@@ -34,10 +36,7 @@ export default {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    this.marker = new THREE.Mesh(
-      new THREE.BoxBufferGeometry(0.005, 0.005, 0.1),
-      new THREE.MeshPhongMaterial()
-    );
+    this.marker = new THREE.Mesh(new THREE.BoxBufferGeometry(0.005, 0.005, 0.1), new THREE.MeshPhongMaterial());
     this.marker.visible = true;
     //this.scene.add(this.marker);
 
@@ -67,10 +66,7 @@ export default {
     );
 
     // renderer
-    this.renderer.setSize(
-      this.sceneCanvas.offsetWidth,
-      this.sceneCanvas.offsetHeight
-    );
+    this.renderer.setSize(this.sceneCanvas.offsetWidth, this.sceneCanvas.offsetHeight);
     this.renderer.setClearColor("#212121");
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -91,6 +87,21 @@ export default {
     light.shadow.mapSize.height = 2048;
     this.scene.add(light);
 
+    this.renderer.domElement.addEventListener("pointerdown", (event) => {
+      if(event.button != 0) return;
+      this.mouseDown = true;
+      this.$root.$emit("set-pixel", this.currentCoord);
+    });
+
+    this.renderer.domElement.addEventListener("pointerup", (event) => {
+      this.mouseDown = false;
+    });
+
+    this.renderer.domElement.addEventListener("pointermove", (event) => {
+      if(!this.mouseDown) return;
+      this.$root.$emit("set-pixel", this.currentCoord);
+    });
+
     // load in a model
     const loader = new FBXLoader();
     const fbx_model = require("../assets/alien_spider.fbx");
@@ -103,16 +114,12 @@ export default {
             if (child.isMesh) {
               child.castShadow = true;
               child.receiveShadow = true;
-              const texture = new THREE.TextureLoader().load(
-                require("../assets/alien_spider_uv.png")
-              );
+              const texture = new THREE.TextureLoader().load(require("../assets/alien_spider_uv.png"));
               texture.magFilter = THREE.NearestFilter;
 
               const material = new THREE.MeshBasicMaterial({ map: texture });
-              material.map = new THREE.CanvasTexture(
-                document.querySelector("#uv-canvas")
-              );
-              material.skinning = true;
+              material.map = new THREE.CanvasTexture(document.querySelector("#uv-canvas"));
+              material.skinning = false;
 
               child.material = material;
               child.material.needsUpdate = true;
@@ -164,17 +171,22 @@ export default {
 
       if (intersects.length > 0 && intersects[0].uv) {
         const uv = intersects[0].uv;
+        this.currentCoord = uv;
         intersects[0].object.material.map.transformUv(uv);
         this.$root.$emit("uv-update", uv);
       }
 
+      // setup combined canvas
+      let _canvas = document.querySelector("#final-canvas");
+      let _ctx = _canvas.getContext("2d");
+      _ctx.drawImage(document.querySelector("#uv-canvas"), 0, 0);
+      _ctx.drawImage(document.querySelector("#draw-canvas"), 0, 0);
+
       this.mainObjects.forEach((obj) => {
         const material = new THREE.MeshBasicMaterial();
-        material.map = new THREE.CanvasTexture(
-          document.querySelector("#uv-canvas")
-        );
+        material.map = new THREE.CanvasTexture(_canvas);
         material.map.magFilter = THREE.NearestFilter;
-        material.skinning = true;
+        material.skinning = false;
         obj.material = material;
         obj.material.needsUpdate = true;
       });
@@ -195,6 +207,7 @@ export default {
 <style>
 #three-scene {
   display: grid;
+  justify-self: center;
   width: 500px;
   height: 500px;
 }
