@@ -24,6 +24,7 @@ export default {
       shiftDown: false,
       currentCoord: null,
       mouseDown: false,
+      intersects: null,
     };
   },
   mounted() {
@@ -36,7 +37,10 @@ export default {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    this.marker = new THREE.Mesh(new THREE.BoxBufferGeometry(0.005, 0.005, 0.005), new THREE.MeshStandardMaterial({color: 0xce2121}));
+    this.marker = new THREE.Mesh(
+      new THREE.BoxBufferGeometry(0.005, 0.005, 0.005),
+      new THREE.MeshStandardMaterial({ color: 0xce2121 })
+    );
     this.marker.visible = true;
     //this.scene.add(this.marker);
 
@@ -47,7 +51,7 @@ export default {
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.addEventListener("change", this.animateThreeJs);
-    this.controls.mouseButtons = {MIDDLE: 0} // make middle mouse button control rotation
+    this.controls.mouseButtons = { MIDDLE: 0 }; // make middle mouse button control rotation
 
     // renderer
     this.renderer.setSize(this.sceneCanvas.offsetWidth, this.sceneCanvas.offsetHeight);
@@ -72,9 +76,10 @@ export default {
     this.scene.add(light);
 
     this.renderer.domElement.addEventListener("pointerdown", (event) => {
-      if(event.button != 0) return;
+      if (event.button != 0) return;
       this.mouseDown = true;
       this.$root.$emit("set-pixel", this.currentCoord);
+      this.setFace();
     });
 
     this.renderer.domElement.addEventListener("pointerup", (event) => {
@@ -82,7 +87,7 @@ export default {
     });
 
     this.renderer.domElement.addEventListener("pointermove", (event) => {
-      if(!this.mouseDown) return;
+      if (!this.mouseDown) return;
       this.$root.$emit("set-pixel", this.currentCoord);
     });
 
@@ -131,6 +136,36 @@ export default {
         this.animateThreeJs();
       }
     },
+    setFace() {
+      // select face
+      if (this.intersects.length > 0 && this.intersects[0].faceIndex && this.mouseDown) {
+        let geometry = new THREE.Geometry().fromBufferGeometry(this.intersects[0].object.geometry);
+        let faceIdx1 = this.intersects[0].faceIndex;
+        let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
+
+        if (faceIdx1 % 2 === 0) {
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0));
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(0, 1));
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 0));
+
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0));
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(1, 1));
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 1));
+        } else {
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0));
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(0, 1));
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 0));
+
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0));
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(1, 1));
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 1));
+        }
+
+        geometry.uvsNeedUpdate = true;
+        this.intersects[0].object.geometry.fromGeometry(geometry);
+        this.renderer.render(this.scene, this.camera);
+      }
+    },
     checkIntersection(x, y) {
       let offsetLeft = this.renderer.domElement.offsetLeft;
       let offsetTop = this.renderer.domElement.offsetTop;
@@ -141,18 +176,37 @@ export default {
       this.mouse.y = -((y - offsetTop) / clientHeight) * 2 + 1;
 
       this.raycaster.setFromCamera(this.mouse, this.camera);
-      let intersects = this.raycaster.intersectObjects(this.mainObjects);
+      this.intersects = this.raycaster.intersectObjects(this.mainObjects);
 
-      if (intersects.length > 0) {
-        this.marker.position.copy(intersects[0].point);
+      if (this.intersects.length > 0) {
+        this.marker.position.copy(this.intersects[0].point);
       }
 
-      if (intersects.length > 0 && intersects[0].uv) {
-        const uv = intersects[0].uv;
+      // set uv coordinate of raycast intersection
+      if (this.intersects.length > 0 && this.intersects[0].uv) {
+        const uv = this.intersects[0].uv;
         this.currentCoord = uv;
-        intersects[0].object.material.map.transformUv(uv);
+        this.intersects[0].object.material.map.transformUv(uv);
         this.$root.$emit("uv-update", uv);
       }
+
+      // // select face
+      // if (this.intersects.length > 0 && this.intersects[0].faceIndex && this.mouseDown) {
+      //   let geometry = new THREE.Geometry().fromBufferGeometry( this.intersects[0].object.geometry);
+      //   let faceIdx1 = this.intersects[0].faceIndex;
+      //   let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1: faceIdx1 - 1;
+
+      //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1,0))
+      //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(0,1))
+      //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0,0))
+
+      //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1,0))
+      //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(1,1))
+      //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0,1))
+
+      //   geometry.uvsNeedUpdate = true
+      //   this.intersects[0].object.geometry.fromGeometry(geometry)
+      // }
 
       // setup combined canvas
       let _canvas = document.querySelector("#final-canvas");
@@ -160,6 +214,7 @@ export default {
       _ctx.drawImage(document.querySelector("#uv-canvas"), 0, 0);
       _ctx.drawImage(document.querySelector("#draw-canvas"), 0, 0);
 
+      // set uv to the combined canvas for every mesh in the object
       this.mainObjects.forEach((obj) => {
         const material = new THREE.MeshBasicMaterial();
         material.map = new THREE.CanvasTexture(_canvas);
