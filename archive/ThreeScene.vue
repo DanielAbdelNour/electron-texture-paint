@@ -36,18 +36,34 @@ export default {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    this.marker = new THREE.Mesh(new THREE.BoxBufferGeometry(0.005, 0.005, 0.005), new THREE.MeshStandardMaterial({color: 0xce2121}));
+    this.marker = new THREE.Mesh(new THREE.BoxBufferGeometry(0.005, 0.005, 0.1), new THREE.MeshPhongMaterial());
     this.marker.visible = true;
     //this.scene.add(this.marker);
 
     this.camera.position.set(1, 0, 0);
 
-    // controls
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.addEventListener("change", this.animateThreeJs);
-    this.controls.mouseButtons = {MIDDLE: 0} // make middle mouse button control rotation
+    this.controls.enableRotate = false;
+    document.addEventListener(
+      "keydown",
+      function (event) {
+        if (event.key == "Shift") {
+          this.shiftDown = true;
+        }
+      }.bind(this)
+    );
+
+    document.addEventListener(
+      "keyup",
+      function (event) {
+        if (event.key == "Shift") {
+          this.shiftDown = false;
+        }
+      }.bind(this)
+    );
 
     // renderer
     this.renderer.setSize(this.sceneCanvas.offsetWidth, this.sceneCanvas.offsetHeight);
@@ -103,7 +119,7 @@ export default {
 
               const material = new THREE.MeshBasicMaterial({ map: texture });
               material.map = new THREE.CanvasTexture(document.querySelector("#uv-canvas"));
-              material.skinning = true;
+              material.skinning = false;
 
               child.material = material;
               child.material.needsUpdate = true;
@@ -144,6 +160,12 @@ export default {
       let intersects = this.raycaster.intersectObjects(this.mainObjects);
 
       if (intersects.length > 0) {
+        this.marker.position.set(0, 0, 0);
+
+        const n = intersects[0].face.normal.clone();
+        n.transformDirection(intersects[0].object.matrixWorld);
+
+        this.marker.lookAt(n);
         this.marker.position.copy(intersects[0].point);
       }
 
@@ -164,7 +186,7 @@ export default {
         const material = new THREE.MeshBasicMaterial();
         material.map = new THREE.CanvasTexture(_canvas);
         material.map.magFilter = THREE.NearestFilter;
-        material.skinning = true;
+        material.skinning = false;
         obj.material = material;
         obj.material.needsUpdate = true;
       });
