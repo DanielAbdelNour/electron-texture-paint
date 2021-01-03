@@ -7,6 +7,9 @@
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { Line2 } from "three/examples/jsm/lines/Line2";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 
 export default {
   name: "ThreeScene",
@@ -25,6 +28,8 @@ export default {
       currentCoord: null,
       mouseDown: false,
       intersects: null,
+      line: null,
+      line2: null,
     };
   },
   mounted() {
@@ -90,6 +95,17 @@ export default {
       if (!this.mouseDown) return;
       this.$root.$emit("set-pixel", this.currentCoord);
     });
+
+    // face hover line
+    let geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(5 * 3), 3));
+    let material = new THREE.LineBasicMaterial({ color: "black", transparent: false, linewidth: 1 });
+    this.line = new THREE.Line(geometry, material);
+    this.line.scale.set(1 / 1000, 1 / 1000, 1 / 1000);
+    this.line2 = new Line2();
+    this.line2.material.linewidth = 0.01;
+    this.line2.scale.set(1 / 1000, 1 / 1000, 1 / 1000);
+    this.scene.add(this.line2);
 
     // load in a model
     const loader = new FBXLoader();
@@ -190,23 +206,45 @@ export default {
         this.$root.$emit("uv-update", uv);
       }
 
-      // // select face
-      // if (this.intersects.length > 0 && this.intersects[0].faceIndex && this.mouseDown) {
-      //   let geometry = new THREE.Geometry().fromBufferGeometry( this.intersects[0].object.geometry);
-      //   let faceIdx1 = this.intersects[0].faceIndex;
-      //   let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1: faceIdx1 - 1;
+      if (this.intersects.length > 0) {
+        const intersect = this.intersects[0];
+        const face = intersect.face;
 
-      //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1,0))
-      //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(0,1))
-      //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0,0))
+        let mesh = intersect.object;
 
-      //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1,0))
-      //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(1,1))
-      //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0,1))
+        const linePosition = this.line.geometry.attributes.position;
+        const meshPosition = mesh.geometry.attributes.position;
 
-      //   geometry.uvsNeedUpdate = true
-      //   this.intersects[0].object.geometry.fromGeometry(geometry)
-      // }
+        let directGeometry = new THREE.Geometry();
+        directGeometry.fromBufferGeometry(mesh.geometry);
+        let faceIdx1 = this.intersects[0].faceIndex
+        let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
+
+        const face2 = directGeometry.faces[faceIdx2];
+        console.log(directGeometry);
+
+        // linePosition.copyAt(0, meshPosition, face.a);
+        // linePosition.copyAt(1, meshPosition, face.b);
+        // linePosition.copyAt(2, meshPosition, face.c);
+        // linePosition.copyAt(3, meshPosition, face2.c);
+        // linePosition.copyAt(4, meshPosition, face2.a);
+
+        linePosition.copyAt(0, meshPosition, face.a);
+        linePosition.copyAt(1, meshPosition, face.b);
+        linePosition.copyAt(2, meshPosition, face.c);
+        linePosition.copyAt(3, meshPosition, face2.b);
+        linePosition.copyAt(4, meshPosition, face2.c);
+
+
+
+        mesh.updateMatrix();
+        this.line.geometry.applyMatrix4(mesh.matrix);
+
+        this.line2.geometry.fromLine(this.line);
+
+
+       // debugger;
+      }
 
       // setup combined canvas
       let _canvas = document.querySelector("#final-canvas");
