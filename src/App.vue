@@ -3,6 +3,7 @@
     <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
     <ThreeScene />
     <UVCanvas/>
+    <button @click="$root.$emit('tile-mode')">tile mode</button>
   </div>
 </template>
 

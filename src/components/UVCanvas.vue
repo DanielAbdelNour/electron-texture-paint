@@ -47,6 +47,13 @@ export default {
       this.setPixel(data);
     });
 
+    this.$root.$on('tile-mode', () =>{
+      this.img.src = require("../assets/tileset.png");
+      let dims = this.img.naturalWidth;
+      console.log(dims)
+      console.log(this.img.src)
+    })
+
     window.addEventListener(
       "pointermove",
       function (event) {
