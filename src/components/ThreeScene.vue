@@ -98,7 +98,7 @@ export default {
 
     // face hover line
     let geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(5 * 3), 3));
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6 * 3), 3));
     let material = new THREE.LineBasicMaterial({ color: "black", transparent: false, linewidth: 1 });
     this.line = new THREE.Line(geometry, material);
     this.line.scale.set(1 / 1000, 1 / 1000, 1 / 1000);
@@ -221,19 +221,25 @@ export default {
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
 
         const face2 = directGeometry.faces[faceIdx2];
-        console.log(directGeometry);
 
-        // linePosition.copyAt(0, meshPosition, face.a);
-        // linePosition.copyAt(1, meshPosition, face.b);
-        // linePosition.copyAt(2, meshPosition, face.c);
-        // linePosition.copyAt(3, meshPosition, face2.c);
-        // linePosition.copyAt(4, meshPosition, face2.a);
+        // render a thick line representing the selected face
+        if(faceIdx1 % 2 === 0){
+          linePosition.copyAt(0, meshPosition, face.a);
+          linePosition.copyAt(1, meshPosition, face.b);
+          linePosition.copyAt(2, meshPosition, face.c);
 
-        linePosition.copyAt(0, meshPosition, face.a);
-        linePosition.copyAt(1, meshPosition, face.b);
-        linePosition.copyAt(2, meshPosition, face.c);
-        linePosition.copyAt(3, meshPosition, face2.b);
-        linePosition.copyAt(4, meshPosition, face2.c);
+          linePosition.copyAt(3, meshPosition, face2.b);
+          linePosition.copyAt(4, meshPosition, face2.c);
+          linePosition.copyAt(5, meshPosition, face2.a);
+        }else{
+          linePosition.copyAt(0, meshPosition, face2.a);
+          linePosition.copyAt(1, meshPosition, face2.b);
+          linePosition.copyAt(2, meshPosition, face2.c);
+
+          linePosition.copyAt(3, meshPosition, face.b);
+          linePosition.copyAt(4, meshPosition, face.c);
+          linePosition.copyAt(5, meshPosition, face.a);
+        }
 
 
 
