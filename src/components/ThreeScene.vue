@@ -284,6 +284,7 @@ export default {
 <style>
 #three-scene {
   display: grid;
+  grid-area: three-scene;
   justify-self: center;
   width: 500px;
   height: 500px;

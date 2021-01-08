@@ -1,8 +1,8 @@
 <template>
   <div id="canvas-wrapper">
-    <canvas id="uv-canvas"/>
-    <canvas id="draw-canvas"/>
-    <canvas id="final-canvas"/>
+    <canvas id="uv-canvas" />
+    <canvas id="draw-canvas" />
+    <canvas id="final-canvas" />
   </div>
 </template>
 
@@ -15,8 +15,8 @@ export default {
       canvas: null,
       ctx: null,
       img: null,
-      canvasSize: 64,
-      imgSize: 64,
+      canvasWidth: 64,
+      canvasHeight: 64,
       drawCanvas: null,
       finalCanvas: null,
       mouseDown: false,
@@ -24,20 +24,23 @@ export default {
   },
   mounted() {
     this.canvas = document.querySelector("#uv-canvas");
-    this.canvas.width = this.canvas.height = this.canvasSize;
+    this.canvas.width = this.canvasWidth;
+    this.canvas.height = this.canvasHeight;
     this.ctx = this.canvas.getContext("2d");
     this.ctx.imageSmoothingEnabled = false;
 
     this.img = new Image();
     this.img.src = require("../assets/alien_spider_uv.png");
 
-    this.ctx.drawImage(this.img, 0, 0, this.canvasSize, this.canvasSize);
+    this.ctx.drawImage(this.img, 0, 0, this.canvasWidth, this.canvasHeight);
 
     this.drawCanvas = document.querySelector("#draw-canvas");
-    this.drawCanvas.width = this.drawCanvas.height = this.canvasSize;
+    this.drawCanvas.width = this.canvasWidth;
+    this.drawCanvas.height = this.canvasHeight;
 
     this.finalCanvas = document.querySelector("#final-canvas");
-    this.finalCanvas.width = this.finalCanvas.height = this.canvasSize;
+    this.finalCanvas.width = this.canvasWidth;
+    this.finalCanvas.height = this.canvasHeight;
 
     this.$root.$on("uv-update", (data) => {
       this.moveUVCursor(data);
@@ -47,23 +50,16 @@ export default {
       this.setPixel(data);
     });
 
-    this.$root.$on('tile-mode', () =>{
-      this.img.src = require("../assets/tileset.png");
-      let dims = this.img.naturalWidth;
-      console.log(dims)
-      console.log(this.img.src)
-    })
+    this.$root.$on("tile-mode", () => {
+      this.img = new Image();
+      this.img.src = require("../assets/uv_debug.png");
+
+      this.img.onload = (x) => this.resizeCanvas(x);
+    });
 
     window.addEventListener(
       "pointermove",
       function (event) {
-        // let offsetLeft = this.canvas.offsetLeft;
-        // let offsetTop = this.canvas.offsetTop;
-        // let clientWidth = this.canvas.clientWidth;
-        // let clientHeight = this.canvas.clientHeight;
-
-        // let x = (event.clientX - offsetLeft) / clientWidth;
-        // let y = (event.clientY - offsetTop) / clientHeight;
         let rect = this.canvas.getBoundingClientRect();
         let x = (event.clientX - rect.left) / rect.width;
         let y = (event.clientY - rect.top) / rect.height;
@@ -97,13 +93,13 @@ export default {
   methods: {
     moveUVCursor(coords) {
       //let ctx = this.canvas.getContext("2d");
-      this.ctx.clearRect(0, 0, this.canvasSize, this.canvasSize);
-      this.ctx.drawImage(this.img, 0, 0, this.canvasSize, this.canvasSize);
+      this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+      this.ctx.drawImage(this.img, 0, 0, this.canvasWidth, this.canvasHeight);
 
-      let x = this.canvasSize * coords.x;
-      let y = this.canvasSize * coords.y;
+      let x = this.canvasWidth * coords.x;
+      let y = this.canvasHeight * coords.y;
 
-      let brushSize = this.canvasSize / this.imgSize;
+      let brushSize = 1; //this.canvasWidth / this.imgWidth;
       let rx = Math.floor(x);
       let ry = Math.floor(y);
 
@@ -113,16 +109,29 @@ export default {
     setPixel(coords) {
       let ctx = this.drawCanvas.getContext("2d");
 
-      let x = this.canvasSize * coords.x;
-      let y = this.canvasSize * coords.y;
+      let x = this.canvasWidth * coords.x;
+      let y = this.canvasHeight * coords.y;
 
-      let brushSize = this.canvasSize / this.imgSize;
+      let brushSize = 1; //this.canvasWidth / this.imgWidth;
       let rx = Math.floor(x);
       let ry = Math.floor(y);
 
       ctx.fillRect(rx, ry, brushSize, brushSize);
     },
+    resizeCanvas(x) {
+      let dimWidth = x.path[0].naturalWidth;
+      let dimHeight = x.path[0].naturalHeight;
 
+      this.canvasWidth = dimWidth;
+      this.canvasHeight = dimHeight;
+
+      let uv = document.querySelector("#uv-canvas");
+      let draw = document.querySelector("#draw-canvas");
+      let final = document.querySelector("#final-canvas");
+
+      uv.width = draw.width = final.width = dimWidth;
+      uv.height = draw.height = final.height = dimHeight;
+    },
     pointerCoords(canvas, event) {
       let rect = canvas.getBoundingClientRect();
       let x = (event.clientX - rect.left) / rect.width;
@@ -144,6 +153,7 @@ export default {
 <style>
 #canvas-wrapper {
   display: grid;
+  grid-area: uv-canvas;
   justify-self: center;
   position: relative;
 }
