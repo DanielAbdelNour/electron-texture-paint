@@ -2,6 +2,7 @@
   <div id="canvas-wrapper">
     <canvas id="uv-canvas" />
     <canvas id="draw-canvas" />
+    <canvas id="tile-canvas" />
     <canvas id="final-canvas" />
   </div>
 </template>
@@ -18,8 +19,14 @@ export default {
       canvasWidth: 64,
       canvasHeight: 64,
       drawCanvas: null,
+      tileCanvas: null,
       finalCanvas: null,
       mouseDown: false,
+      tileWidth: 16,
+      tileHeight: 16,
+      tileSize: 16,
+      tileMode: false,
+      selectedTileUV: null,
     };
   },
   mounted() {
@@ -37,6 +44,10 @@ export default {
     this.drawCanvas = document.querySelector("#draw-canvas");
     this.drawCanvas.width = this.canvasWidth;
     this.drawCanvas.height = this.canvasHeight;
+
+    this.tileCanvas = document.querySelector("#tile-canvas");
+    this.tileCanvas.width = this.canvasWidth;
+    this.tileCanvas.height = this.canvasHeight;
 
     this.finalCanvas = document.querySelector("#final-canvas");
     this.finalCanvas.width = this.canvasWidth;
@@ -71,13 +82,15 @@ export default {
 
         if (this.canvas.matches(":hover") || this.drawCanvas.matches(":hover")) {
           this.moveUVCursor(coords);
+          this.highlightTile(coords);
         }
       }.bind(this)
     );
 
     this.drawCanvas.addEventListener("mousedown", (event) => {
       this.mouseDown = true;
-      this.setPixel(this.pointerCoords(this.drawCanvas, event));
+      if (!this.tileMode) this.setPixel(this.pointerCoords(this.drawCanvas, event));
+      else this.setTile(this.pointerCoords(this.drawCanvas, event));
     });
 
     this.drawCanvas.addEventListener("mouseup", (event) => {
@@ -86,7 +99,12 @@ export default {
 
     this.drawCanvas.addEventListener("mousemove", (event) => {
       if (!this.mouseDown) return;
-      this.setPixel(this.pointerCoords(this.drawCanvas, event));
+      if (!this.tileMode) this.setPixel(this.pointerCoords(this.drawCanvas, event));
+      else this.setTile(this.pointerCoords(this.drawCanvas, event));
+    });
+
+    this.$root.$on("tile-mode", () => {
+      this.tileMode = true;
     });
   },
 
@@ -127,10 +145,11 @@ export default {
 
       let uv = document.querySelector("#uv-canvas");
       let draw = document.querySelector("#draw-canvas");
+      let tile = document.querySelector("#tile-canvas");
       let final = document.querySelector("#final-canvas");
 
-      uv.width = draw.width = final.width = dimWidth;
-      uv.height = draw.height = final.height = dimHeight;
+      uv.width = draw.width = tile.width = final.width = dimWidth;
+      uv.height = draw.height = final.height = tile.height = dimHeight;
     },
     pointerCoords(canvas, event) {
       let rect = canvas.getBoundingClientRect();
@@ -143,6 +162,54 @@ export default {
       };
 
       return coords;
+    },
+    highlightTile(coords) {
+      let canvas = document.querySelector("#uv-canvas");
+      let ctx = canvas.getContext("2d");
+
+      ctx.beginPath();
+      ctx.lineWidth = "1px";
+      ctx.strokeStyle = "red";
+
+      let x = this.canvasWidth * coords.x;
+      let y = this.canvasHeight * coords.y;
+      let rx = Math.floor(x);
+      let ry = Math.floor(y);
+
+      //let tx = Math.floor((rx * this.tileSize) / this.canvasWidth / (this.canvasWidth / this.tileSize)) * this.tileSize;
+      let tx = Math.floor(rx / this.tileSize) * this.tileSize;
+      let ty = Math.floor(ry / this.tileSize) * this.tileSize;
+
+      ctx.rect(tx + 0.5, ty + 0.5, 16 - 1, 16 - 1);
+      ctx.stroke();
+    },
+    setTile(coords) {
+      let canvas = document.querySelector("#uv-canvas");
+      let ctx = canvas.getContext("2d");
+
+      ctx.beginPath();
+      ctx.lineWidth = "1px";
+      ctx.strokeStyle = "blue";
+
+      let x = this.canvasWidth * coords.x;
+      let y = this.canvasHeight * coords.y;
+      let rx = Math.floor(x);
+      let ry = Math.floor(y);
+
+      let tx = Math.floor(rx / this.tileSize) * this.tileSize;
+      let ty = Math.floor(ry / this.tileSize) * this.tileSize;
+
+      ctx.rect(tx + 0.5, ty + 0.5, 16 - 1, 16 - 1);
+      ctx.stroke();
+
+      this.selectedTileUV = {
+        x0: tx / this.canvasWidth,
+        x1: tx / this.canvasWidth + this.tileSize / this.canvasWidth,
+        y0: 1 - ty / this.canvasHeight - this.tileSize / this.canvasHeight,
+        y1: 1 - ty / this.canvasHeight,
+      };
+
+      this.$root.$emit("set-tile", this.selectedTileUV);
     },
   },
   watch: {},
@@ -173,6 +240,16 @@ export default {
   image-rendering: pixelated;
   cursor: none;
   z-index: 1;
+}
+#tile-canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 500px;
+  height: 500px;
+  image-rendering: pixelated;
+  cursor: none;
+  z-index: -1;
 }
 
 #final-canvas {

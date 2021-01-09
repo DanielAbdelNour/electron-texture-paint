@@ -30,6 +30,8 @@ export default {
       intersects: null,
       line: null,
       line2: null,
+      tileMode: false,
+      selectedTileUV: null,
     };
   },
   mounted() {
@@ -83,8 +85,9 @@ export default {
     this.renderer.domElement.addEventListener("pointerdown", (event) => {
       if (event.button != 0) return;
       this.mouseDown = true;
-      this.$root.$emit("set-pixel", this.currentCoord);
-      this.setFace();
+
+      if (this.tileMode) this.setFace();
+      else this.$root.$emit("set-pixel", this.currentCoord);
     });
 
     this.renderer.domElement.addEventListener("pointerup", (event) => {
@@ -93,7 +96,8 @@ export default {
 
     this.renderer.domElement.addEventListener("pointermove", (event) => {
       if (!this.mouseDown) return;
-      this.$root.$emit("set-pixel", this.currentCoord);
+      if (this.tileMode) this.setFace();
+      else this.$root.$emit("set-pixel", this.currentCoord);
     });
 
     // face hover line
@@ -139,6 +143,14 @@ export default {
     );
 
     window.addEventListener("pointermove", this.onPointerMove);
+
+    this.$root.$on("tile-mode", () => {
+      this.tileMode = true;
+    });
+
+    this.$root.$on("set-tile", (coords) => {
+      this.selectedTileUV = coords;
+    });
   },
 
   methods: {
@@ -159,22 +171,40 @@ export default {
         let faceIdx1 = this.intersects[0].faceIndex;
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
 
+        // if (faceIdx1 % 2 === 0) {
+        //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0)); //bottom-right
+        //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(0, 1)); //top-left
+        //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 0)); //top-right
+
+        //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0)); //bottom-right
+        //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(1, 1)); //top-right
+        //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 1)); //top-left
+        // } else {
+        //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0));
+        //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(0, 1));
+        //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 0));
+
+        //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0));
+        //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(1, 1));
+        //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 1));
+        // }
+        let uv = this.selectedTileUV;
         if (faceIdx1 % 2 === 0) {
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0));
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(0, 1));
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 0));
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0)); //bottom-right
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x0, uv.y1)); //top-left
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y0)); //top-right
 
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0));
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(1, 1));
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 1));
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y0)); //bottom-right
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x1, uv.y1)); //top-right
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y1)); //top-left
         } else {
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0));
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(0, 1));
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 0));
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x0, uv.y1));
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y0));
 
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0));
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(1, 1));
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 1));
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x1, uv.y1));
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y1));
         }
 
         geometry.uvsNeedUpdate = true;
@@ -217,13 +247,13 @@ export default {
 
         let directGeometry = new THREE.Geometry();
         directGeometry.fromBufferGeometry(mesh.geometry);
-        let faceIdx1 = this.intersects[0].faceIndex
+        let faceIdx1 = this.intersects[0].faceIndex;
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
 
         const face2 = directGeometry.faces[faceIdx2];
 
         // render a thick line representing the selected face
-        if(faceIdx1 % 2 === 0){
+        if (faceIdx1 % 2 === 0) {
           linePosition.copyAt(0, meshPosition, face.a);
           linePosition.copyAt(1, meshPosition, face.b);
           linePosition.copyAt(2, meshPosition, face.c);
@@ -231,7 +261,7 @@ export default {
           linePosition.copyAt(3, meshPosition, face2.b);
           linePosition.copyAt(4, meshPosition, face2.c);
           linePosition.copyAt(5, meshPosition, face2.a);
-        }else{
+        } else {
           linePosition.copyAt(0, meshPosition, face2.a);
           linePosition.copyAt(1, meshPosition, face2.b);
           linePosition.copyAt(2, meshPosition, face2.c);
@@ -241,15 +271,12 @@ export default {
           linePosition.copyAt(5, meshPosition, face.a);
         }
 
-
-
         mesh.updateMatrix();
         this.line.geometry.applyMatrix4(mesh.matrix);
 
         this.line2.geometry.fromLine(this.line);
 
-
-       // debugger;
+        // debugger;
       }
 
       // setup combined canvas
