@@ -32,6 +32,8 @@ export default {
       line2: null,
       tileMode: false,
       selectedTileUV: null,
+      uvArr1: null,
+      uvArr2: null,
     };
   },
   mounted() {
@@ -150,6 +152,16 @@ export default {
 
     this.$root.$on("set-tile", (coords) => {
       this.selectedTileUV = coords;
+      this.uvArr = [
+        { x: coords.x1, y: coords.y0 },
+        { x: coords.x1, y: coords.y1 },
+        { x: coords.x0, y: coords.y1 },
+        { x: coords.x0, y: coords.y0 },
+      ];
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key == "r") this.rotateUV();
     });
   },
 
@@ -171,24 +183,8 @@ export default {
         let faceIdx1 = this.intersects[0].faceIndex;
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
 
-        // if (faceIdx1 % 2 === 0) {
-        //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0)); //bottom-right
-        //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(0, 1)); //top-left
-        //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 0)); //top-right
+        // let uv = this.selectedTileUV;
 
-        //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0)); //bottom-right
-        //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(1, 1)); //top-right
-        //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 1)); //top-left
-        // } else {
-        //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(1, 0));
-        //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(0, 1));
-        //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(0, 0));
-
-        //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(1, 0));
-        //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(1, 1));
-        //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(0, 1));
-        // }
-        let uv = this.selectedTileUV;
         // if (faceIdx1 % 2 === 0) {
         //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0)); //bottom-right
         //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x0, uv.y1)); //top-left
@@ -206,28 +202,36 @@ export default {
         //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x1, uv.y1));
         //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y1));
         // }
+
+        let uv = this.uvArr;
+
         if (faceIdx1 % 2 === 0) {
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y1)); //bottom-right
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x0, uv.y0)); //top-left
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x1, uv.y0)); //bottom-left
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[3].x, uv[3].y)); //bottom-left
 
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y1)); //bottom-right
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x0, uv.y1)); //top-right
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y0)); //top-left
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[1].x, uv[1].y)); //top-right
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
         } else {
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y1));
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x0, uv.y0));
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x1, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x0, uv.y1));
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y0));
 
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y1));
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x0, uv.y1));
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x1, uv.y1));
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y1));
         }
 
         geometry.uvsNeedUpdate = true;
         this.intersects[0].object.geometry.fromGeometry(geometry);
         this.renderer.render(this.scene, this.camera);
       }
+    },
+    rotateUV(reverse=false) {
+      let arr = this.uvArr; //pointer to this.uvarr
+      if (reverse) arr.unshift(arr.pop());
+      else arr.push(arr.shift());
     },
     checkIntersection(x, y) {
       let offsetLeft = this.renderer.domElement.offsetLeft;
