@@ -2,7 +2,7 @@
   <div id="app">
     <ThreeScene />
     <UVCanvas/>
-    <button @click="$root.$emit('tile-mode')" style="display:grid; grid-area:footer">tile mode</button>
+    <button id="tile-mode-btn" @click="$root.$emit('tile-mode')" style="display:grid; grid-area:footer">tile mode</button>
   </div>
 </template>
 
@@ -36,6 +36,13 @@ export default {
 </script>
 
 <style>
+#tile-mode-btn{
+  display: grid;
+  margin-top: 10px;
+  justify-self: center;
+  width:60%
+}
+
 #app {
   display: grid;
   grid-template-areas: 

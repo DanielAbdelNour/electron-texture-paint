@@ -115,7 +115,7 @@ export default {
 
     // load in a model
     const loader = new FBXLoader();
-    const fbx_model = require("../assets/alien_spider.fbx");
+    const fbx_model = require("../assets/cube.fbx");
 
     loader.load(
       fbx_model,
@@ -182,26 +182,42 @@ export default {
         let geometry = new THREE.Geometry().fromBufferGeometry(this.intersects[0].object.geometry);
         let faceIdx1 = this.intersects[0].faceIndex;
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
+        let face1 = geometry.faces[faceIdx1];
+        let face2 = geometry.faces[faceIdx2];
+        let faceVerts1 = [geometry.vertices[face1.a], geometry.vertices[face1.b], geometry.vertices[face1.c]];
+        let faceVerts2 = [geometry.vertices[face2.a], geometry.vertices[face2.b], geometry.vertices[face2.c]];
 
-        // let uv = this.selectedTileUV;
+        let sharedVerts = 0;
+        let sharedDiscover = [];
+        faceVerts1.forEach((x, xi) => {
+          faceVerts2.forEach((y, yi) => {
+            if (x.equals(y)) {
+              sharedVerts++;
+            }
+          });
+        });
 
-        // if (faceIdx1 % 2 === 0) {
-        //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0)); //bottom-right
-        //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x0, uv.y1)); //top-left
-        //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y0)); //bottom-left
-
-        //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y0)); //bottom-right
-        //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x1, uv.y1)); //top-right
-        //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y1)); //top-left
-        // } else {
-        //   geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y0));
-        //   geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x0, uv.y1));
-        //   geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y0));
-
-        //   geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0));
-        //   geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x1, uv.y1));
-        //   geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y1));
-        // }
+        // the second face does not have enough shared verts. find the ones that do
+        let faceList = [];
+        if (sharedVerts < 2) {
+          //faceIdx2 = faceIdx1 + 1;
+          geometry.faces.forEach((fc, i) => {
+            // 3 Vec3s corrosponding to the face verts
+            let query = [geometry.vertices[fc.a], geometry.vertices[fc.b], geometry.vertices[fc.c]];
+            let vcount = 0
+            // how many verts from query are in faceVerts1?
+            faceVerts1.forEach((f,fi) => {
+              query.forEach((g, gi) =>{
+                if(f.equals(g)){
+                  vcount ++;
+                }
+              })
+            })
+            if(vcount >=2){
+              faceList.push({face_idx: i, face:fc, vcount:vcount})
+            }
+          });
+        }
 
         let uv = this.uvArr;
 
@@ -214,13 +230,13 @@ export default {
           geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[1].x, uv[1].y)); //top-right
           geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
         } else {
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv.x1, uv.y0));
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv.x0, uv.y1));
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv.x0, uv.y0));
+          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
+          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[2].x, uv[2].y));
+          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[3].x, uv[3].y));
 
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv.x1, uv.y0));
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv.x1, uv.y1));
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv.x0, uv.y1));
+          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
+          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[1].x, uv[1].y));
+          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[2].x, uv[2].y));
         }
 
         geometry.uvsNeedUpdate = true;
@@ -228,7 +244,7 @@ export default {
         this.renderer.render(this.scene, this.camera);
       }
     },
-    rotateUV(reverse=false) {
+    rotateUV(reverse = false) {
       let arr = this.uvArr; //pointer to this.uvarr
       if (reverse) arr.unshift(arr.pop());
       else arr.push(arr.shift());

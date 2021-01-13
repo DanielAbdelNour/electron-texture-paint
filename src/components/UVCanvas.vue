@@ -63,7 +63,7 @@ export default {
 
     this.$root.$on("tile-mode", () => {
       this.img = new Image();
-      this.img.src = require("../assets/uv_debug.png");
+      this.img.src = require("../assets/tileset2.png");
 
       this.img.onload = (x) => this.resizeCanvas(x);
     });
