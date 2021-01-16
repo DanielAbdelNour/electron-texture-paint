@@ -188,7 +188,6 @@ export default {
         let faceVerts2 = [geometry.vertices[face2.a], geometry.vertices[face2.b], geometry.vertices[face2.c]];
 
         let sharedVerts = 0;
-        let sharedDiscover = [];
         faceVerts1.forEach((x, xi) => {
           faceVerts2.forEach((y, yi) => {
             if (x.equals(y)) {
@@ -198,45 +197,73 @@ export default {
         });
 
         // the second face does not have enough shared verts. find the ones that do
+        let uv = this.uvArr;
+
         let faceList = [];
         if (sharedVerts < 2) {
-          //faceIdx2 = faceIdx1 + 1;
           geometry.faces.forEach((fc, i) => {
             // 3 Vec3s corrosponding to the face verts
             let query = [geometry.vertices[fc.a], geometry.vertices[fc.b], geometry.vertices[fc.c]];
-            let vcount = 0
+            let vcount = 0;
             // how many verts from query are in faceVerts1?
-            faceVerts1.forEach((f,fi) => {
-              query.forEach((g, gi) =>{
-                if(f.equals(g)){
-                  vcount ++;
+            faceVerts1.forEach((f, fi) => {
+              query.forEach((g, gi) => {
+                if (f.equals(g)) {
+                  vcount++;
                 }
-              })
-            })
-            if(vcount >=2){
-              faceList.push({face_idx: i, face:fc, vcount:vcount})
+              });
+            });
+            if (vcount >= 2 && i != faceIdx1) {
+              faceList.push({ face_idx: i, face: fc, vcount: vcount });
             }
           });
-        }
 
-        let uv = this.uvArr;
+          console.log(faceIdx1);
+          console.log(faceList);
 
-        if (faceIdx1 % 2 === 0) {
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[3].x, uv[3].y)); //bottom-left
+          //faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 - 1 : faceIdx1 + 1;
+          faceIdx2 = faceList
+            .map((z) => z.face_idx)
+            .reduce((a, b) => {
+              return Math.abs(b - faceIdx1) < Math.abs(a - faceIdx1) ? b : a;
+            });
+          // faceidx2 = closest idx to faceidx1 in facelist idxs
 
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[1].x, uv[1].y)); //top-right
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
+          if (faceIdx1 % 2 === 0) {
+            geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
+            geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
+            geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[3].x, uv[3].y)); //bottom-left
+
+            geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
+            geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[1].x, uv[1].y)); //top-right
+            geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
+          } else {
+            geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
+            geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[2].x, uv[2].y));
+            geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[3].x, uv[3].y));
+
+            geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
+            geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[1].x, uv[1].y));
+            geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[2].x, uv[2].y));
+          }
         } else {
-          geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
-          geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[2].x, uv[2].y));
-          geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[3].x, uv[3].y));
+          if (faceIdx1 % 2 === 0) {
+            geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
+            geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
+            geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[3].x, uv[3].y)); //bottom-left
 
-          geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
-          geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[1].x, uv[1].y));
-          geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[2].x, uv[2].y));
+            geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y)); //bottom-right
+            geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[1].x, uv[1].y)); //top-right
+            geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[2].x, uv[2].y)); //top-left
+          } else {
+            geometry.faceVertexUvs[0][faceIdx1][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
+            geometry.faceVertexUvs[0][faceIdx1][1].copy(new THREE.Vector2(uv[2].x, uv[2].y));
+            geometry.faceVertexUvs[0][faceIdx1][2].copy(new THREE.Vector2(uv[3].x, uv[3].y));
+
+            geometry.faceVertexUvs[0][faceIdx2][0].copy(new THREE.Vector2(uv[0].x, uv[0].y));
+            geometry.faceVertexUvs[0][faceIdx2][1].copy(new THREE.Vector2(uv[1].x, uv[1].y));
+            geometry.faceVertexUvs[0][faceIdx2][2].copy(new THREE.Vector2(uv[2].x, uv[2].y));
+          }
         }
 
         geometry.uvsNeedUpdate = true;
@@ -275,7 +302,7 @@ export default {
 
       if (this.intersects.length > 0) {
         const intersect = this.intersects[0];
-        const face = intersect.face;
+        const face1 = intersect.face;
 
         let mesh = intersect.object;
 
@@ -287,13 +314,44 @@ export default {
         let faceIdx1 = this.intersects[0].faceIndex;
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
 
+        ////
+        let faceList = [];
+        let faceVerts1 = [
+          directGeometry.vertices[face1.a],
+          directGeometry.vertices[face1.b],
+          directGeometry.vertices[face1.c],
+        ];
+
+        directGeometry.faces.forEach((fc, i) => {
+          // 3 Vec3s corrosponding to the face verts
+          let query = [directGeometry.vertices[fc.a], directGeometry.vertices[fc.b], directGeometry.vertices[fc.c]];
+          let vcount = 0;
+          // how many verts from query are in faceVerts1?
+          faceVerts1.forEach((f, fi) => {
+            query.forEach((g, gi) => {
+              if (f.equals(g)) {
+                vcount++;
+              }
+            });
+          });
+          if (vcount >= 2 && i != faceIdx1) {
+            faceList.push({ face_idx: i, face: fc, vcount: vcount });
+          }
+        });
+        faceIdx2 = faceList
+          .map((z) => z.face_idx)
+          .reduce((a, b) => {
+            return Math.abs(b - faceIdx1) < Math.abs(a - faceIdx1) ? b : a;
+          });
+        //////
+
         const face2 = directGeometry.faces[faceIdx2];
 
         // render a thick line representing the selected face
         if (faceIdx1 % 2 === 0) {
-          linePosition.copyAt(0, meshPosition, face.a);
-          linePosition.copyAt(1, meshPosition, face.b);
-          linePosition.copyAt(2, meshPosition, face.c);
+          linePosition.copyAt(0, meshPosition, face1.a);
+          linePosition.copyAt(1, meshPosition, face1.b);
+          linePosition.copyAt(2, meshPosition, face1.c);
 
           linePosition.copyAt(3, meshPosition, face2.b);
           linePosition.copyAt(4, meshPosition, face2.c);
@@ -303,9 +361,9 @@ export default {
           linePosition.copyAt(1, meshPosition, face2.b);
           linePosition.copyAt(2, meshPosition, face2.c);
 
-          linePosition.copyAt(3, meshPosition, face.b);
-          linePosition.copyAt(4, meshPosition, face.c);
-          linePosition.copyAt(5, meshPosition, face.a);
+          linePosition.copyAt(3, meshPosition, face1.b);
+          linePosition.copyAt(4, meshPosition, face1.c);
+          linePosition.copyAt(5, meshPosition, face1.a);
         }
 
         mesh.updateMatrix();
