@@ -5,6 +5,13 @@ module.exports = {
         .test(/\.fbx$/)
         .use('file-loader')
           .loader('file-loader')
-          .end()
+          .end();
+
+      config.module
+        .rule('glb')
+        .test(/\.glb$/)
+        .use('file-loader')
+          .loader('file-loader')
+          .end();
     }
   }

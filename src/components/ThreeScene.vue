@@ -115,7 +115,7 @@ export default {
 
     // load in a model
     const loader = new FBXLoader();
-    const fbx_model = require("../assets/cube.fbx");
+    const fbx_model = require("../assets/cube2.fbx");
 
     loader.load(
       fbx_model,
@@ -180,6 +180,7 @@ export default {
       // select face
       if (this.intersects.length > 0 && this.intersects[0].faceIndex && this.mouseDown) {
         let geometry = new THREE.Geometry().fromBufferGeometry(this.intersects[0].object.geometry);
+        geometry.mergeVertices(2);
         let faceIdx1 = this.intersects[0].faceIndex;
         let faceIdx2 = faceIdx1 % 2 === 0 ? faceIdx1 + 1 : faceIdx1 - 1;
         let face1 = geometry.faces[faceIdx1];
