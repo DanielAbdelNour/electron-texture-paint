@@ -3,6 +3,7 @@
     <ThreeScene />
     <UVCanvas/>
     <button id="tile-mode-btn" @click="$root.$emit('tile-mode')" style="display:grid; grid-area:footer">tile mode</button>
+    <button id="export-gltf-btn" @click="$root.$emit('export-gltf')" style="display:grid; grid-area:footer">export gltf</button>
   </div>
 </template>
 
@@ -39,8 +40,14 @@ export default {
 #tile-mode-btn{
   display: grid;
   margin-top: 10px;
-  justify-self: center;
+  justify-self: right;
   width:60%
+}
+
+#export-gltf-btn{
+  display: grid;
+  width:30%;
+   justify-self: left;
 }
 
 #app {
