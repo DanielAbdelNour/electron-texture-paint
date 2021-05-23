@@ -116,7 +116,7 @@ export default {
 
     // load in a model
     const loader = new FBXLoader();
-    const fbx_model = require("../assets/untitled.fbx");
+    const fbx_model = require("../assets/alien_spider_no_material.fbx");
 
     loader.load(
       fbx_model,
